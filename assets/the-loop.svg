@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" role="img" aria-label="The tango-tempo feedback reinforcement loop: grill, implement, feedback reinforces">
+  <!-- title -->
+  <text x="480" y="58" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="34" font-weight="700" fill="#33312e">the tango-tempo loop</text>
+  <text x="480" y="90" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#33312e" opacity="0.6">small step &#183; feedback &#183; adjust &#183; repeat</text>
+
+  <!-- guide ring -->
+  <circle cx="480" cy="288" r="150" fill="none" stroke="#33312e" stroke-opacity="0.14" stroke-width="2" stroke-dasharray="3 9"/>
+
+  <!-- Grill chip -->
+  <rect x="375" y="140" width="210" height="78" rx="20" fill="#fff2ee" stroke="#d92b2b" stroke-width="3"/>
+  <text x="480" y="178" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#33312e">Grill</text>
+  <text x="480" y="201" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#33312e" opacity="0.65">grilling &#183; clarify before you guess</text>
+
+  <!-- Implement chip -->
+  <rect x="652" y="340" width="210" height="78" rx="20" fill="#eaf7f4" stroke="#0f766e" stroke-width="3"/>
+  <text x="757" y="378" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#33312e">Implement</text>
+  <text x="757" y="401" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#33312e" opacity="0.65">ponytail &#183; make it small</text>
+
+  <!-- Feedback chip -->
+  <rect x="98" y="340" width="210" height="78" rx="20" fill="#fff7e0" stroke="#b07d2b" stroke-width="3"/>
+  <text x="203" y="378" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#33312e">Feedback</text>
+  <text x="203" y="401" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#33312e" opacity="0.65">stop &#183; hand it over</text>
+
+  <!-- Grill -> Implement -->
+  <path d="M 588 196 C 672 226, 712 292, 716 336" fill="none" stroke="#33312e" stroke-opacity="0.7" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 708 330 L 720 342 L 706 344 Z" fill="#33312e" opacity="0.7"/>
+
+  <!-- Implement -> Feedback -->
+  <path d="M 648 394 C 560 452, 400 452, 314 402" fill="none" stroke="#33312e" stroke-opacity="0.7" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 322 412 L 306 400 L 322 394 Z" fill="#33312e" opacity="0.7"/>
+
+  <!-- Feedback -> Grill : reinforcement, the emphasized return -->
+  <path d="M 200 336 C 150 258, 276 186, 372 174" fill="none" stroke="#e8352a" stroke-width="9" stroke-linecap="round"/>
+  <path d="M 358 160 L 380 172 L 362 182 Z" fill="#e8352a"/>
+  <text x="264" y="292" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="15" font-style="italic" font-weight="600" fill="#e8352a">feedback reinforces</text>
+
+  <!-- center -->
+  <text x="480" y="284" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="21" font-style="italic" font-weight="700" fill="#33312e" opacity="0.8">repeat</text>
+  <text x="480" y="308" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#33312e" opacity="0.6">&#8804; 25 lines per step</text>
+
+  <!-- footer -->
+  <text x="480" y="500" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="14" font-style="italic" fill="#33312e" opacity="0.55">tango-tempo orchestrates &#183; grilling asks &#183; ponytail builds</text>
+</svg>
