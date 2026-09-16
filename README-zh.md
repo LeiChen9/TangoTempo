@@ -25,6 +25,8 @@
 
 循环尽可能小：**澄清**（grilling 追问）任何含糊需求 → **实现**（ponytail）最小的一步（净增 ≤ 25 行）→ **停下，交回给你反馈**。如此往复。一旦 agent 的理解和你的理解出现偏差，它回到追问环节重新对齐，而不是继续硬推。
 
+让它处处生效的是两层设计：**技能**（按需加载的机制）+ **`AGENTS.md` Gate**（常驻强制，Copilot、Codex、OpenCode 每个会话都会自动加载）。
+
 ## 技能一览
 
 | 技能 | 归属 | 调用方式 | 作用 |
@@ -36,7 +38,22 @@
 
 ## 安装
 
-**方式一 —— 一条命令，装进三个生态**（需 GitHub CLI 的 `gh skill`，预览版）
+**方式一 —— 一条脚本，全部接好**（推荐）
+
+```bash
+git clone git@github.com:LeiChen9/TangoTempo.git
+cd TangoTempo
+./install.sh              # 自动检测已装的 agent，软链 4 个技能 + 装 Gate
+./install.sh --scope project   # 项目级：只装 $PWD/.agents/skills + $PWD/AGENTS.md
+./install.sh --agents opencode # 只装某个平台：opencode | codex | copilot
+./uninstall.sh            # 卸载：只删软链和 Gate 标记块，你的文件一个不碰
+```
+
+- 技能用**软链**，仓库 `git pull` 即全局更新。
+- **Gate**（`AGENTS.md`）以 `<!-- BEGIN tango-tempo gate -->` … `<!-- END tango-tempo gate -->` 标记**追加**进各平台的用户级规则文件（`~/.config/opencode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）。已有内容绝不覆盖，重复运行幂等。
+- 这正是让 `tango-tempo` 真正**常驻**的关键：技能本身是按需加载的，而 Gate 在每个会话都会加载。
+
+**方式二 —— 一条命令，装进三个生态**（需 GitHub CLI 的 `gh skill`，预览版）
 
 ```bash
 gh skill install LeiChen9/TangoTempo --all --agent github-copilot --agent codex --agent opencode
@@ -45,13 +62,13 @@ gh skill install LeiChen9/TangoTempo --all --agent github-copilot --agent codex 
 - 加 `--scope user` → 装到所有项目。
 - 加 `--scope project` → 装进当前仓库的 `.agents/skills/` —— 该目录被 Copilot、Codex、OpenCode 共享，装一次三边生效。
 
-**方式二 —— OpenCode 用 skills.sh**
+**方式三 —— OpenCode 用 skills.sh**
 
 ```bash
 npx skills add LeiChen9/TangoTempo
 ```
 
-**方式三 —— 手动安装**（克隆一次，把各技能文件夹软链到对应目录）
+**方式四 —— 手动安装**（克隆一次，把各技能文件夹软链到对应目录）
 
 | 生态 | 个人级 | 项目级（你的仓库里） |
 |---|---|---|

@@ -25,6 +25,8 @@
 
 The loop is as small as possible: **grill** any unclear requirement, **implement** the smallest next step (≤ 25 net lines), then **stop and hand it over for feedback**. Repeat. When the agent's reading and yours diverge, it goes back to grilling instead of pushing more steps.
 
+Two layers make it stick everywhere: the **skills** (on-demand mechanics) plus the **`AGENTS.md` Gate** (always-on enforcement, loaded every session by Copilot, Codex, and OpenCode).
+
 ## Skills
 
 | Skill | Origin | Invocation | What it does |
@@ -36,7 +38,22 @@ The loop is as small as possible: **grill** any unclear requirement, **implement
 
 ## Install
 
-**Option 1 — one command, all three ecosystems** *(requires GitHub CLI with `gh skill`, preview)*
+**Option 1 — one script, everything wired up** *(recommended)*
+
+```bash
+git clone git@github.com:LeiChen9/TangoTempo.git
+cd TangoTempo
+./install.sh              # detects installed agents, symlinks all 4 skills, installs the Gate
+./install.sh --scope project   # project level only: $PWD/.agents/skills + $PWD/AGENTS.md
+./install.sh --agents opencode # single host: opencode | codex | copilot
+./uninstall.sh            # removes links and Gate blocks; your own files are never touched
+```
+
+- Skills are **symlinked**, so `git pull` in this repo updates every host instantly.
+- The **Gate** (`AGENTS.md`) is *appended* to each host's user-level rules file (`~/.config/opencode/AGENTS.md`, `~/.codex/AGENTS.md`, `~/.copilot/copilot-instructions.md`) inside `<!-- BEGIN tango-tempo gate -->` … `<!-- END tango-tempo gate -->` markers. Existing content is never touched or overwritten; re-running is idempotent.
+- This is what makes `tango-tempo` truly **always-on**: skills alone are on-demand — the Gate is loaded ever session on every platform.
+
+**Option 2 — one command, all three ecosystems** *(requires GitHub CLI with `gh skill`, preview)*
 
 ```bash
 gh skill install LeiChen9/TangoTempo --all --agent github-copilot --agent codex --agent opencode
@@ -45,13 +62,13 @@ gh skill install LeiChen9/TangoTempo --all --agent github-copilot --agent codex 
 - Add `--scope user` to install for every project you work on.
 - Add `--scope project` to install into the current repo's `.agents/skills/` — that directory is shared by Copilot, Codex, and OpenCode, so one install serves all three.
 
-**Option 2 — OpenCode via skills.sh**
+**Option 3 — OpenCode via skills.sh**
 
 ```bash
 npx skills add LeiChen9/TangoTempo
 ```
 
-**Option 3 — manual** *(clone once, symlink each folder into your host's skills dir)*
+**Option 4 — manual** *(clone once, symlink each folder into your host's skills dir)*
 
 | Host | Personal | Project (in your repo) |
 |---|---|---|

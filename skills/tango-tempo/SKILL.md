@@ -1,47 +1,47 @@
 ---
 name: tango-tempo
 description: >
-  A "small steps, immediate feedback" coding rhythm: pushes a task forward in
-  small looping steps, each step clarifying requirements first, implementing
-  quickly, and getting feedback right away, so the implementation tempo stays
-  in mesh with the user's cognitive tempo. ACTIVE EVERY RESPONSE.
+  A "small steps, immediate feedback" coding rhythm: pushes a task forward in small looping steps, each step clarifying requirements first, implementing quickly, and getting feedback right away, so the implementation tempo stays in mesh with the user's cognitive tempo. ACTIVE EVERY RESPONSE.
 license: MIT
 ---
 
 # tango-tempo
 
-Drive the task the way two dance steps mesh: you take one small step of
-implementation, the user takes one small step of understanding, and neither
-moves on until it has the other's feedback. The goal is not to finish in one
-breath, but to keep the implementation tempo and the user's cognitive tempo in
-sync forever — gears meshed, never spinning free, never slipping.
+## Approval-gated loop
 
-## One loop (as small as possible)
+One loop completes one user-approved slice, not the whole request. The current slice is the only authorized work.
 
-1. **Grill** — any unclear requirement, ask via the grilling skill
-   (`/grilling`), don't guess. Settled questions are the only way the phase
-   ends.
-2. **Implement** — follow the ponytail skill (`/ponytail`): it is your guide
-   for understanding the system and for writing the code.
-3. **Feedback** — stop, hand the change and the reasoning to the user, wait
-   for a word.
+1. **Align** – state the current understanding and smallest safe slice; use the grilling skill (`/grilling`) for unresolved decisions instead of guessing.
+2. **Approve** – get explicit user approval for that slice before any change.
+3. **Implement** – follow the ponytail skill (`/ponytail`); change only the approved slice.
+4. **Verify** – check the slice without expanding its scope.
+5. **Handoff** – report the change, evidence, and proposed next slice; stop.
+
+Completing an approved slice through verification satisfies persistence. After handoff, further work is blocked—not abandoned—because the next slice has not yet been approved. A broad request permits planning all slices, not silently executing them all.
 
 ## Rules of meshing
 
-- Keep each step to ≤25 net added lines, to keep the feedback cycle short.
-- The user's feedback may change — or not — their understanding of the
-  requirements/system; you update your plan accordingly, which may also change
-  or not. Either outcome is fine — as long as you both update from the same
-  facts.
-- Volunteer your reading of the system so the user can correct it; don't wait
-  to be asked.
-- When you slip out of mesh (your understanding diverges from the user's), go
-  back to the grilling skill (`/grilling`) to realign — don't keep pushing
-  steps.
+### Review budget
 
-## Reading the mesh
+* Keep each approved slice to <= 25 lines of review surface.
+* For each changed region, count `max(old lines, new lines)`; sum all regions across all files. A 49-line rewrite therefore counts as 49, not zero.
+* Count source, tests, configuration, documentation, and notebook cell source; do not count generated metadata or command output.
+* Never game the budget with compressed formatting or artificial diff splits.
+* If the smallest safe change exceeds 25, explain why and get an explicit exception before editing.
 
-The step is greenlit and the next round of grilling is visibly shorter → the
-rhythm is right. You keep getting corrected, or the user has to say things
-twice → the rhythm has slipped: slow down on purpose — split a smaller step,
-or grill before touching code.
+### Scope and failure
+
+* A correction found during implementation or verification may continue only if it preserves the approved outcome and total review budget.
+* Any newly discovered file, behavior, dependency, design decision, or budget excess returns the loop to **Align**; discovery is not approval.
+* If verification cannot pass inside the slice, hand off the failure and its evidence. Never widen scope or claim completion.
+
+### Handoff contract
+
+Every handoff states:
+
+* **Understanding** – current system reading and assumptions to correct.
+* **Change** – what the approved slice changed.
+* **Evidence** – verification result or exact blocker.
+* **Next** – smallest proposed slice, explicitly marked unapproved.
+
+Only explicit approval advances **Approve** to **Implement**. Corrections, questions, or silence return to **Align**.
