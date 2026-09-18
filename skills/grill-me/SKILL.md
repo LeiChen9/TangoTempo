@@ -5,4 +5,4 @@ disable-model-invocation: true
 license: MIT
 ---
 
-Invoke the grilling skill.
+Run a  `/grilling` session.
