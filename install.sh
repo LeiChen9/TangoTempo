@@ -47,6 +47,16 @@ if [[ ! -f "$GATE_FILE" ]]; then
   echo "error: $GATE_FILE not found (is this the TangoTempo repo?)" >&2; exit 1
 fi
 
+# Project-scope install inside this repo itself is meaningless (and harmful):
+# $PWD/AGENTS.md would BE $GATE_FILE, so sync_gate would append the file to
+# itself. Bail out early with a pointer instead.
+if [[ "$SCOPE" == "project" ]] && [[ "$PWD" -ef "$REPO_DIR" ]]; then
+  echo "note: you are inside the TangoTempo repo itself — nothing to install."
+  echo "This repo's AGENTS.md is already the Gate source and skills/ the skill source."
+  echo "cd to your project directory and re-run with --scope project."
+  exit 0
+fi
+
 log() { if [[ "$DRY_RUN" -eq 1 ]]; then echo "[dry-run] $*"; else echo "$*"; fi; }
 do_or_skip() { if [[ "$DRY_RUN" -eq 1 ]]; then return 0; else "$@"; fi; }
 
@@ -159,10 +169,17 @@ sync_gate() {
         print
         while ((getline line < g) > 0) print line
         close(g)
-        inblock = 1
+        inblock = 1                        # $0 still holds the BEGIN line here;
+        next                             # getline into `line` never touches $0
+      }
+      inblock && index($0, e) {
+        # Stale body (possibly glued to END on one line in legacy files
+        # written without a trailing newline) is dropped; fresh body is
+        # already printed above. Only the END marker is kept.
+        print e
+        inblock = 0
         next
       }
-      inblock && index($0, e) { inblock = 0; print; next }
       inblock { next }                     # drop the stale body only
       { print }                            # everything else belongs to the user
     ' "$file" > "$tmp"
@@ -179,9 +196,19 @@ sync_gate() {
   [[ "$DRY_RUN" -eq 1 ]] && return
   mkdir -p "$(dirname "$file")"
   {
-    [[ -e "$file" ]] && [[ -s "$file" ]] && { printf '\n'; }
+    # Separate from pre-existing content with exactly one blank line.
+    if [[ -e "$file" ]] && [[ -s "$file" ]]; then
+      last="$(tail -c 1 "$file")"
+      [[ -n "$last" ]] && printf '\n'    # file lacks trailing newline -> add one
+      printf '\n'
+    fi
     printf '%s\n' "$BEGIN_MARK"
     cat "$GATE_FILE"
+    # The Gate source itself must end with a newline before END_MARK goes
+    # on its own line (a source file without trailing newline would glue
+    # the END marker onto the last body line).
+    gate_last="$(tail -c 1 "$GATE_FILE")"
+    [[ -n "$gate_last" ]] && printf '\n'
     printf '%s\n' "$END_MARK"
   } >> "$file"
 }
