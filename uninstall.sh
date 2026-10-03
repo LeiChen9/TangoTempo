@@ -7,7 +7,7 @@
 # Usage mirrors install.sh:
 #   ./uninstall.sh
 #   ./uninstall.sh --scope project
-#   ./uninstall.sh --agents opencode,codex,copilot
+#   ./uninstall.sh --agents opencode,codex,copilot,cline
 #   ./uninstall.sh --dry-run
 #
 set -euo pipefail
@@ -42,6 +42,7 @@ host_skills_dir() {
     opencode) echo "$HOME/.config/opencode/skills" ;;
     codex)    echo "$HOME/.codex/skills" ;;
     copilot)  echo "$HOME/.copilot/skills" ;;
+    cline)    echo "$HOME/.cline/skills" ;;
   esac
 }
 host_gate_file() {
@@ -49,13 +50,20 @@ host_gate_file() {
     opencode) echo "$HOME/.config/opencode/AGENTS.md" ;;
     codex)    echo "$HOME/.codex/AGENTS.md" ;;
     copilot)  echo "$HOME/.copilot/copilot-instructions.md" ;;
+    cline)    echo "$HOME/Documents/Cline/Rules/tango-tempo.md" ;;
+  esac
+}
+host_project_skills_dir() {
+  case "$1" in
+    opencode|codex|copilot) echo ".agents/skills" ;;
+    cline)                  echo ".cline/skills" ;;
   esac
 }
 
 if [[ -n "$AGENTS_FILTER" ]]; then
   IFS=',' read -r -a TARGET_HOSTS <<< "$AGENTS_FILTER"
 else
-  TARGET_HOSTS=(opencode codex copilot)
+  TARGET_HOSTS=(opencode codex copilot cline)
 fi
 
 SKILL_NAMES=()
@@ -70,7 +78,12 @@ if [[ "$SCOPE" == "global" ]]; then
   GATE_FILES=()
   for h in "${TARGET_HOSTS[@]}"; do GATE_FILES+=("$(host_gate_file "$h")"); done
 else
-  TARGETS=("$PWD/.agents/skills")
+  TARGETS=()
+  for h in "${TARGET_HOSTS[@]}"; do
+    d="$PWD/$(host_project_skills_dir "$h")"
+    case " ${TARGETS[*]:-} " in *" $d "*) continue ;; esac
+    TARGETS+=("$d")
+  done
   GATE_FILES=("$PWD/AGENTS.md")
 fi
 
@@ -99,6 +112,12 @@ for file in "${GATE_FILES[@]}"; do
         !inblock { print }
       ' "$file" > "$tmp"
       do_or_skip mv "$tmp" "$file"
+      # A file that was nothing but our block (e.g. Cline's tango-tempo.md) is
+      # removed rather than left behind empty; anything else is kept as-is.
+      if [[ ! -s "$file" ]] || ! grep -q '[^[:space:]]' "$file"; then
+        log "remove  $file (nothing left after stripping our block)"
+        do_or_skip rm "$file"
+      fi
     fi
   elif [[ -f "$file" ]]; then
     echo "keep    $file (no gate block found)" >&2

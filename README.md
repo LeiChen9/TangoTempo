@@ -9,13 +9,13 @@
 > Drive the task the way two dance steps mesh — one small step of implementation, one small step of understanding, and *neither moves on without the other's feedback*.
 
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![runs on](https://img.shields.io/badge/runs%20on-GitHub%20Copilot%20%7C%20OpenAI%20Codex%20%7C%20OpenCode-blue)](./README.md)
+[![runs on](https://img.shields.io/badge/runs%20on-GitHub%20Copilot%20%7C%20OpenAI%20Codex%20%7C%20OpenCode%20%7C%20Cline-blue)](./README.md)
 
 </div>
 
 ## What is it
 
-**TangoTempo** is a set of **agent skills** that keeps an AI coding agent and you in rhythm — small steps, immediate feedback, never spinning free. Four skills, one loop, three ecosystems: the same `SKILL.md` runs unchanged on **GitHub Copilot**, **OpenAI Codex**, and **OpenCode** (plus the wider Agent Skills ecosystem — Claude Code, Cursor, and more).
+**TangoTempo** is a set of **agent skills** that keeps an AI coding agent and you in rhythm — small steps, immediate feedback, never spinning free. Four skills, one loop, four ecosystems: the same `SKILL.md` runs unchanged on **GitHub Copilot**, **OpenAI Codex**, **OpenCode**, and **Cline** (plus the wider Agent Skills ecosystem — Claude Code, Cursor, and more).
 
 > **Why** — Big-bang prompts finish one breath and misfire the next. TangoTempo trades that for a meshed rhythm: the agent takes one small step, hands it back, and only moves on when it has your word. It is a working *tempo*, not a prompt.
 
@@ -25,7 +25,7 @@
 
 The loop is as small as possible: **grill** any unclear requirement, **implement** the smallest next step (≤ 25 net lines), then **stop and hand it over for feedback**. Repeat. When the agent's reading and yours diverge, it goes back to grilling instead of pushing more steps.
 
-Two layers make it stick everywhere: the **skills** (on-demand mechanics) plus the **`AGENTS.md` Gate** (always-on enforcement, loaded every session by Copilot, Codex, and OpenCode).
+Two layers make it stick everywhere: the **skills** (on-demand mechanics) plus the **`AGENTS.md` Gate** (always-on enforcement, loaded every session by Copilot, Codex, OpenCode, and Cline).
 
 ## Skills
 
@@ -44,16 +44,18 @@ Two layers make it stick everywhere: the **skills** (on-demand mechanics) plus t
 git clone git@github.com:LeiChen9/TangoTempo.git
 cd TangoTempo
 ./install.sh              # detects installed agents, symlinks all 4 skills, installs the Gate
-./install.sh --scope project   # project level only: $PWD/.agents/skills + $PWD/AGENTS.md
-./install.sh --agents opencode # single host: opencode | codex | copilot
+./install.sh --scope project   # project level only: per-host skills dir + $PWD/AGENTS.md
+./install.sh --agents cline    # single host: opencode | codex | copilot | cline
 ./uninstall.sh            # removes links and Gate blocks; your own files are never touched
+
+git pull && ./install.sh  # already installed? re-running is the one-command update
 ```
 
 - Skills are **symlinked**, so `git pull` in this repo updates every host instantly.
-- The **Gate** (`AGENTS.md`) is *appended* to each host's user-level rules file (`~/.config/opencode/AGENTS.md`, `~/.codex/AGENTS.md`, `~/.copilot/copilot-instructions.md`) inside `<!-- BEGIN tango-tempo gate -->` … `<!-- END tango-tempo gate -->` markers. Existing content is never touched or overwritten; re-running is idempotent.
-- This is what makes `tango-tempo` truly **always-on**: skills alone are on-demand — the Gate is loaded ever session on every platform.
+- The **Gate** (`AGENTS.md`) goes into each host's user-level rules file (`~/.config/opencode/AGENTS.md`, `~/.codex/AGENTS.md`, `~/.copilot/copilot-instructions.md`, `~/Documents/Cline/Rules/tango-tempo.md`) inside `<!-- BEGIN tango-tempo gate -->` … `<!-- END tango-tempo gate -->` markers. Re-running **refreshes only that block** — everything you wrote outside the markers is never read, moved, or overwritten, and a file with an unpaired marker is reported and left untouched.
+- This is what makes `tango-tempo` truly **always-on**: skills alone are on-demand — the Gate is loaded every session on every platform.
 
-**Option 2 — one command, all three ecosystems** *(requires GitHub CLI with `gh skill`, preview)*
+**Option 2 — one command, the three `gh skill` ecosystems** *(requires GitHub CLI with `gh skill`, preview)*
 
 ```bash
 gh skill install LeiChen9/TangoTempo --all --agent github-copilot --agent codex --agent opencode
@@ -75,6 +77,7 @@ npx skills add LeiChen9/TangoTempo
 | OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/`, `.agents/skills/` |
 | OpenAI Codex | `~/.codex/skills/` | `.agents/skills/` |
 | GitHub Copilot | `~/.copilot/skills/` | `.github/skills/`, `.agents/skills/` |
+| Cline | `~/.cline/skills/` | `.cline/skills/` |
 
 ```bash
 git clone git@github.com:LeiChen9/TangoTempo.git ~/TangoTempo
@@ -87,6 +90,13 @@ ln -s ~/TangoTempo/skills/ponytail   ~/.config/opencode/skills/ponytail
 
 Restart your agent — `tango-tempo` is active from the first message.
 
+**Cline specifics** — Cline loads **rules** every session but **skills** on demand, which maps onto TangoTempo's two layers exactly:
+
+- The Gate lives in `~/Documents/Cline/Rules/tango-tempo.md` — a plain always-on rule file with **no frontmatter**, so it is never filtered out by `paths:`. That is the Cline equivalent of `copilot-instructions.md`.
+- The four skills land in `~/.cline/skills/` (project scope: `.cline/skills/`). Cline reads neither `.agents/skills/` nor plugin-style directories, which is why it gets its own target.
+- Cline also auto-detects **`AGENTS.md` at your repo root** as a workspace rule, and workspace rules outrank global ones — so inside a clone of this repo the Gate is already top priority with zero setup.
+- Two boundaries: Cline ignores `disable-model-invocation`, so `grill-me` cannot be pinned to user-only invocation there; and `install.sh` is bash, so on Windows run it from Git Bash or WSL (the rule lands in `Documents\Cline\Rules`).
+
 ## Usage
 
 - **Just work.** `tango-tempo` is always on: steps stay small, results come back often, and the agent volunteers its reading of the system so you can correct it early.
@@ -96,7 +106,7 @@ Restart your agent — `tango-tempo` is active from the first message.
 
 ## Compatibility
 
-All four skills are plain **Agent Skills** — a `SKILL.md` with YAML frontmatter, following the open standard shared by GitHub Copilot, OpenAI Codex, OpenCode, Claude Code, and others.
+All four skills are plain **Agent Skills** — a `SKILL.md` with YAML frontmatter, following the open standard shared by GitHub Copilot, OpenAI Codex, OpenCode, Cline, Claude Code, and others.
 
 - `agents/openai.yaml` drives the display name and invocation policy in Codex/Copilot agent UIs.
 - OpenCode-specific frontmatter keys (`disable-model-invocation`) are simply ignored by hosts that don't read them.

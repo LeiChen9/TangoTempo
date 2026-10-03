@@ -9,13 +9,13 @@
 > 让它像两支舞步一样咬合——实现一小步、理解一小步，*没有对方的反馈，谁都不迈下一步*。
 
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![runs on](https://img.shields.io/badge/runs%20on-GitHub%20Copilot%20%7C%20OpenAI%20Codex%20%7C%20OpenCode-blue)](./README.md)
+[![runs on](https://img.shields.io/badge/runs%20on-GitHub%20Copilot%20%7C%20OpenAI%20Codex%20%7C%20OpenCode%20%7C%20Cline-blue)](./README.md)
 
 </div>
 
 ## 这是什么
 
-**TangoTempo** 是一套 **AI Agent 技能（skills）**，让编码 agent 和你的节奏始终咬合——小步快跑、即时反馈、永不空转。四个技能、一个循环、三个生态：同一份 `SKILL.md` 在 **GitHub Copilot**、**OpenAI Codex** 和 **OpenCode** 上原样运行（也兼容 Claude Code、Cursor 等更广的 Agent Skills 生态）。
+**TangoTempo** 是一套 **AI Agent 技能（skills）**，让编码 agent 和你的节奏始终咬合——小步快跑、即时反馈、永不空转。四个技能、一个循环、四个生态：同一份 `SKILL.md` 在 **GitHub Copilot**、**OpenAI Codex**、**OpenCode** 和 **Cline** 上原样运行（也兼容 Claude Code、Cursor 等更广的 Agent Skills 生态）。
 
 > **为什么** —— 一次性大 prompt 一口气做完，下一口气就脱节。TangoTempo 换一种玩法：agent 迈一小步就交回来，收到你的反馈才继续。它定义的是工作的**节奏**，不是一段提示词。
 
@@ -25,7 +25,7 @@
 
 循环尽可能小：**澄清**（grilling 追问）任何含糊需求 → **实现**（ponytail）最小的一步（净增 ≤ 25 行）→ **停下，交回给你反馈**。如此往复。一旦 agent 的理解和你的理解出现偏差，它回到追问环节重新对齐，而不是继续硬推。
 
-让它处处生效的是两层设计：**技能**（按需加载的机制）+ **`AGENTS.md` Gate**（常驻强制，Copilot、Codex、OpenCode 每个会话都会自动加载）。
+让它处处生效的是两层设计：**技能**（按需加载的机制）+ **`AGENTS.md` Gate**（常驻强制，Copilot、Codex、OpenCode、Cline 每个会话都会自动加载）。
 
 ## 技能一览
 
@@ -44,16 +44,18 @@
 git clone git@github.com:LeiChen9/TangoTempo.git
 cd TangoTempo
 ./install.sh              # 自动检测已装的 agent，软链 4 个技能 + 装 Gate
-./install.sh --scope project   # 项目级：只装 $PWD/.agents/skills + $PWD/AGENTS.md
-./install.sh --agents opencode # 只装某个平台：opencode | codex | copilot
+./install.sh --scope project   # 项目级：装进各平台的项目目录 + $PWD/AGENTS.md
+./install.sh --agents cline    # 只装某个平台：opencode | codex | copilot | cline
 ./uninstall.sh            # 卸载：只删软链和 Gate 标记块，你的文件一个不碰
+
+git pull && ./install.sh  # 已经装过？重新跑一次就是「一键更新」
 ```
 
 - 技能用**软链**，仓库 `git pull` 即全局更新。
-- **Gate**（`AGENTS.md`）以 `<!-- BEGIN tango-tempo gate -->` … `<!-- END tango-tempo gate -->` 标记**追加**进各平台的用户级规则文件（`~/.config/opencode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）。已有内容绝不覆盖，重复运行幂等。
+- **Gate**（`AGENTS.md`）以 `<!-- BEGIN tango-tempo gate -->` … `<!-- END tango-tempo gate -->` 标记写进各平台的用户级规则文件（`~/.config/opencode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`、`~/Documents/Cline/Rules/tango-tempo.md`）。重复运行**只刷新这一块**：块外你写的内容绝不被读取、移动或覆盖；标记块不配对时会给出警告并完全不碰该文件。
 - 这正是让 `tango-tempo` 真正**常驻**的关键：技能本身是按需加载的，而 Gate 在每个会话都会加载。
 
-**方式二 —— 一条命令，装进三个生态**（需 GitHub CLI 的 `gh skill`，预览版）
+**方式二 —— 一条命令，装进 `gh skill` 支持的三个生态**（需 GitHub CLI 的 `gh skill`，预览版）
 
 ```bash
 gh skill install LeiChen9/TangoTempo --all --agent github-copilot --agent codex --agent opencode
@@ -75,6 +77,7 @@ npx skills add LeiChen9/TangoTempo
 | OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/`、`.agents/skills/` |
 | OpenAI Codex | `~/.codex/skills/` | `.agents/skills/` |
 | GitHub Copilot | `~/.copilot/skills/` | `.github/skills/`、`.agents/skills/` |
+| Cline | `~/.cline/skills/` | `.cline/skills/` |
 
 ```bash
 git clone git@github.com:LeiChen9/TangoTempo.git ~/TangoTempo
@@ -87,6 +90,13 @@ ln -s ~/TangoTempo/skills/ponytail   ~/.config/opencode/skills/ponytail
 
 重启你的 agent —— `tango-tempo` 从第一句话就开始生效。
 
+**Cline 专属说明** —— Cline 的 **rules 每会话常驻**、**skills 按需加载**，正好对上 TangoTempo 的两层设计：
+
+- Gate 落在 `~/Documents/Cline/Rules/tango-tempo.md` —— 一个**不带 frontmatter** 的常驻规则文件，因此永远不会被 `paths:` 条件过滤掉。这就是 Cline 版的 `copilot-instructions.md`。
+- 四个技能落在 `~/.cline/skills/`（项目级为 `.cline/skills/`）。Cline 既不读 `.agents/skills/`，也不读插件式目录，所以它需要独立的目标目录。
+- Cline 还会**自动把仓库根目录的 `AGENTS.md` 识别为 workspace 规则**，而 workspace 规则优先级高于 global 规则 —— 所以在任何 clone 了本仓库的目录里，Gate 天生就是最高优先级，零配置。
+- 两个边界：Cline 不识别 `disable-model-invocation`，因此 `grill-me` 在 Cline 上无法强制「仅用户可调用」；`install.sh` 是 bash 脚本，Windows 用户请用 Git Bash 或 WSL 运行（规则会落到 `Documents\Cline\Rules`）。
+
 ## 用法
 
 - **正常用就行。** `tango-tempo` 常驻：步子小、回交勤，agent 会主动说出自己对系统的理解，让你尽早纠正。
@@ -96,7 +106,7 @@ ln -s ~/TangoTempo/skills/ponytail   ~/.config/opencode/skills/ponytail
 
 ## 兼容性
 
-四份技能都是标准 **Agent Skills**（`SKILL.md` + YAML frontmatter），遵循 GitHub Copilot、OpenAI Codex、OpenCode、Claude Code 等共同支持的开放规范。
+四份技能都是标准 **Agent Skills**（`SKILL.md` + YAML frontmatter），遵循 GitHub Copilot、OpenAI Codex、OpenCode、Cline、Claude Code 等共同支持的开放规范。
 
 - `agents/openai.yaml` 提供 Codex / Copilot 侧的显示名与调用策略。
 - OpenCode 专属 frontmatter 字段（`disable-model-invocation`）不识别它的生态会自动忽略。

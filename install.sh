@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 #
 # install.sh — sync TangoTempo skills + always-on Gate into your agent's
-# environment. Idempotent, non-destructive: existing files are appended to,
-# never overwritten. Skills are installed as symlinks, so `git pull` in this
-# repo instantly updates every host.
+# environment. Idempotent, non-destructive: files are appended to, or have the
+# tango-tempo marker block refreshed in place, never reset. Skills are installed
+# as symlinks, so `git pull` + re-running this script updates every host.
 #
 # Usage:
-#   ./install.sh                          global scope, auto-detect hosts
-#   ./install.sh --scope project          install into $PWD (.agents/skills + AGENTS.md)
+#   ./install.sh                          install + update, global, auto-detect hosts
+#   ./install.sh --scope project          install into $PWD (per-host dir + AGENTS.md)
 #   ./install.sh --agents opencode        only this host (comma-separated list)
 #   ./install.sh --dry-run                preview without changing anything
 #
+# Hosts: opencode | codex | copilot | cline
 set -euo pipefail
 
 # --- markers ----------------------------------------------------------------
@@ -34,7 +35,7 @@ while [[ $# -gt 0 ]]; do
     --agents) AGENTS_FILTER="$2"; shift 2;;
     --agents=*) AGENTS_FILTER="${1#*=}"; shift;;
     --dry-run) DRY_RUN=1; shift;;
-    --help|-h) sed -n '2,10p' "$0"; exit 0;;
+    --help|-h) sed -n '2,14p' "$0"; exit 0;;
     *) echo "unknown option: $1" >&2; exit 1;;
   esac
 done
@@ -55,6 +56,7 @@ host_skills_dir() {
     opencode) echo "$HOME/.config/opencode/skills" ;;
     codex)    echo "$HOME/.codex/skills" ;;
     copilot)  echo "$HOME/.copilot/skills" ;;
+    cline)    echo "$HOME/.cline/skills" ;;
   esac
 }
 host_gate_file() {
@@ -62,6 +64,17 @@ host_gate_file() {
     opencode) echo "$HOME/.config/opencode/AGENTS.md" ;;
     codex)    echo "$HOME/.codex/AGENTS.md" ;;
     copilot)  echo "$HOME/.copilot/copilot-instructions.md" ;;
+    # Cline loads every rule in this dir on every session, so our own file there
+    # is the always-on equivalent of Copilot's copilot-instructions.md.
+    cline)    echo "$HOME/Documents/Cline/Rules/tango-tempo.md" ;;
+  esac
+}
+# Project-scope skills dir per host. Copilot, Codex and OpenCode share
+# `.agents/skills/`; Cline only reads `.cline/skills/` (or `.clinerules/skills/`).
+host_project_skills_dir() {
+  case "$1" in
+    opencode|codex|copilot) echo ".agents/skills" ;;
+    cline)                  echo ".cline/skills" ;;
   esac
 }
 host_installed() {
@@ -69,6 +82,7 @@ host_installed() {
     opencode) command -v opencode >/dev/null 2>&1 || [[ -d "$HOME/.config/opencode" ]] ;;
     codex)    command -v codex    >/dev/null 2>&1 || [[ -d "$HOME/.codex" ]] ;;
     copilot)  command -v copilot  >/dev/null 2>&1 || [[ -d "$HOME/.copilot" ]] ;;
+    cline)    command -v cline    >/dev/null 2>&1 || [[ -d "$HOME/.cline" ]] || [[ -d "$HOME/Documents/Cline" ]] ;;
   esac
 }
 
@@ -76,15 +90,15 @@ host_installed() {
 if [[ -n "$AGENTS_FILTER" ]]; then
   IFS=',' read -r -a TARGET_HOSTS <<< "$AGENTS_FILTER"
   for h in "${TARGET_HOSTS[@]}"; do
-    case "$h" in opencode|codex|copilot) ;; *) echo "error: unknown host '$h' (try opencode, codex, copilot)" >&2; exit 1;; esac
+    case "$h" in opencode|codex|copilot|cline) ;; *) echo "error: unknown host '$h' (try opencode, codex, copilot, cline)" >&2; exit 1;; esac
   done
 else
   TARGET_HOSTS=()
-  for h in opencode codex copilot; do
+  for h in opencode codex copilot cline; do
     host_installed "$h" && TARGET_HOSTS+=("$h")
   done
   if [[ "${#TARGET_HOSTS[@]}" -eq 0 ]]; then
-    echo "no supported agent detected; pass --agents opencode,codex,copilot" >&2
+    echo "no supported agent detected; pass --agents opencode,codex,copilot,cline" >&2
     exit 1
   fi
 fi
@@ -101,7 +115,12 @@ if [[ "$SCOPE" == "global" ]]; then
   TARGETS=()
   for h in "${TARGET_HOSTS[@]}"; do TARGETS+=("$(host_skills_dir "$h")"); done
 else
-  TARGETS=("$PWD/.agents/skills")
+  TARGETS=()
+  for h in "${TARGET_HOSTS[@]}"; do
+    d="$PWD/$(host_project_skills_dir "$h")"
+    case " ${TARGETS[*]:-} " in *" $d "*) continue ;; esac   # shared dirs link once
+    TARGETS+=("$d")
+  done
 fi
 
 for target in "${TARGETS[@]}"; do
@@ -120,13 +139,42 @@ for target in "${TARGETS[@]}"; do
   done
 done
 
-# --- install Gate (append, never overwrite) -----------------------------------
-append_gate() {
-  local file="$1"
-  if [[ -f "$file" ]] && grep -qF "$BEGIN_MARK" "$file"; then
-    log "ok      $file (gate already present)"
+# --- install/refresh Gate (marker block only — never a reset) -----------------
+# Appends the block when it is absent; refreshes it in place when it is present,
+# so `git pull` + re-run propagates Gate edits. Everything outside the markers
+# is left exactly as it is.
+sync_gate() {
+  local file="$1" has_begin=0 has_end=0
+  if [[ -f "$file" ]]; then
+    grep -qF "$BEGIN_MARK" "$file" && has_begin=1
+    grep -qF "$END_MARK" "$file" && has_end=1
+  fi
+
+  if [[ "$has_begin" -eq 1 && "$has_end" -eq 1 ]]; then
+    log "refresh gate -> $file"
+    [[ "$DRY_RUN" -eq 1 ]] && return
+    local tmp="$file.tango-tempo.new"
+    awk -v b="$BEGIN_MARK" -v e="$END_MARK" -v g="$GATE_FILE" '
+      index($0, b) {                       # our block starts here
+        print
+        while ((getline line < g) > 0) print line
+        close(g)
+        inblock = 1
+        next
+      }
+      inblock && index($0, e) { inblock = 0; print; next }
+      inblock { next }                     # drop the stale body only
+      { print }                            # everything else belongs to the user
+    ' "$file" > "$tmp"
+    mv "$tmp" "$file"
     return
   fi
+
+  if [[ "$has_begin" -eq 1 || "$has_end" -eq 1 ]]; then
+    echo "warn    $file has an unpaired tango-tempo marker — left untouched" >&2
+    return
+  fi
+
   log "append  gate -> $file"
   [[ "$DRY_RUN" -eq 1 ]] && return
   mkdir -p "$(dirname "$file")"
@@ -139,10 +187,11 @@ append_gate() {
 }
 
 if [[ "$SCOPE" == "global" ]]; then
-  for h in "${TARGET_HOSTS[@]}"; do append_gate "$(host_gate_file "$h")"; done
+  for h in "${TARGET_HOSTS[@]}"; do sync_gate "$(host_gate_file "$h")"; done
 else
-  append_gate "$PWD/AGENTS.md"
+  sync_gate "$PWD/AGENTS.md"
 fi
 
 echo
 echo "Done ($SCOPE scope). Restart your agent — tango-tempo is now always-on."
+echo "Update later with: git pull && ./install.sh"
